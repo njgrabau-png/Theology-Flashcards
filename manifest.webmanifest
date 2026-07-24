@@ -1,0 +1,9 @@
+{
+  "name": "Theology Flashcards",
+  "short_name": "Theology",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#0f172a",
+  "description": "A swipe-based theology flashcard app with spaced repetition."
+}

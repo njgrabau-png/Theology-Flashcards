@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>Theology Flashcards</title>
+  <style>
+    :root{
+      --bg:#f4f6f8; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
+      --line:#e2e8f0; --accent:#1d4ed8; --good:#15803d; --bad:#b91c1c;
+      --shadow:0 20px 60px rgba(15,23,42,.14);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg); color:var(--ink); overscroll-behavior:none;
+    }
+    button,select{font:inherit}
+    .app{
+      min-height:100%; max-width:760px; margin:auto; display:flex; flex-direction:column;
+      padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);
+    }
+    header{padding:16px 2px 10px}
+    h1{font-size:1.35rem;margin:0 0 4px}
+    .sub{color:var(--muted);font-size:.9rem}
+    .toolbar{display:grid;grid-template-columns:1fr auto;gap:8px;margin:8px 0 10px}
+    select,.small{
+      border:1px solid var(--line); background:var(--panel); color:var(--ink);
+      border-radius:12px; padding:10px 12px;
+    }
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:10px}
+    .stat{
+      background:rgba(255,255,255,.8); border:1px solid var(--line); border-radius:12px;
+      text-align:center; padding:8px 4px;
+    }
+    .stat strong{display:block;font-size:1rem}
+    .stat span{color:var(--muted);font-size:.7rem}
+    .progress{height:7px;background:#dbe2ea;border-radius:999px;overflow:hidden;margin:0 2px 14px}
+    .progress>div{height:100%;width:0;background:var(--accent);transition:width .2s ease}
+    main{flex:1;display:flex;align-items:center;justify-content:center;min-height:430px}
+    .card-wrap{
+      width:100%; height:min(61vh,550px); min-height:410px; perspective:1200px;
+      position:relative; touch-action:pan-y;
+    }
+    .card{
+      width:100%; height:100%; position:relative; transform-style:preserve-3d;
+      transition:transform .36s ease, translate .22s ease, rotate .22s ease, opacity .22s ease;
+      cursor:pointer;
+    }
+    .card.flipped{transform:rotateY(180deg)}
+    .face{
+      position:absolute; inset:0; backface-visibility:hidden; background:var(--panel);
+      border:1px solid var(--line); border-radius:24px; box-shadow:var(--shadow);
+      padding:28px; display:flex; flex-direction:column;
+    }
+    .back{transform:rotateY(180deg);overflow:auto}
+    .module{
+      color:var(--accent); font-size:.75rem; text-transform:uppercase;
+      letter-spacing:.09em; font-weight:800;
+    }
+    .front-center{margin:auto;text-align:center}
+    .term{font-size:clamp(2rem,8vw,3.6rem);line-height:1.06;margin:12px 0}
+    .pron-front{font-size:1.06rem;color:var(--accent);font-weight:700}
+    .hint{margin-top:16px;color:var(--muted);font-size:.86rem}
+    .back h2{font-size:2rem;margin:14px 0 4px}
+    .back-pron{color:var(--accent);font-weight:700;margin-bottom:18px}
+    .section{margin-top:18px}
+    .label{
+      color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;
+      font-weight:800;margin-bottom:6px;
+    }
+    .copy{font-size:1.05rem;line-height:1.55;margin:0}
+    .speaker{
+      border:0;background:#eaf0ff;color:var(--accent);border-radius:999px;
+      width:44px;height:44px;font-size:1.1rem;margin-top:18px;
+    }
+    .swipe-label{
+      position:absolute;top:28px;padding:9px 13px;border:3px solid;border-radius:10px;
+      font-weight:900;letter-spacing:.08em;opacity:0;z-index:10;pointer-events:none;
+    }
+    .swipe-label.left{right:25px;color:var(--bad);transform:rotate(10deg)}
+    .swipe-label.right{left:25px;color:var(--good);transform:rotate(-10deg)}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:15px 2px 9px}
+    .action{border:0;border-radius:16px;padding:15px 10px;color:white;font-weight:850}
+    .wrong{background:var(--bad)} .right{background:var(--good)}
+    .directions{text-align:center;color:var(--muted);font-size:.78rem;padding-bottom:10px}
+    .empty{
+      width:100%;background:var(--panel);border:1px solid var(--line);border-radius:22px;
+      padding:32px;text-align:center;box-shadow:var(--shadow)
+    }
+    .empty h2{margin-top:0}
+    @media (prefers-color-scheme:dark){
+      :root{--bg:#090e18;--panel:#111827;--ink:#f8fafc;--muted:#94a3b8;--line:#263244;--shadow:0 20px 60px rgba(0,0,0,.35)}
+      .stat{background:rgba(17,24,39,.82)} select,.small{background:#111827;color:#f8fafc}.speaker{background:#172554}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Theology Flashcards</h1>
+    <div class="sub">Swipe left when missed. Swipe right when correct.</div>
+  </header>
+
+  <div class="toolbar">
+    <select id="deckSelect"></select>
+    <button id="shuffleBtn" class="small">Shuffle</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><strong id="dueCount">0</strong><span>Due</span></div>
+    <div class="stat"><strong id="knownCount">0</strong><span>Known</span></div>
+    <div class="stat"><strong id="missedCount">0</strong><span>Missed</span></div>
+    <div class="stat"><strong id="reviewCount">0</strong><span>Reviews</span></div>
+  </div>
+  <div class="progress"><div id="progressBar"></div></div>
+
+  <main id="main">
+    <div class="card-wrap" id="cardWrap">
+      <div class="swipe-label left" id="leftLabel">MISSED</div>
+      <div class="swipe-label right" id="rightLabel">GOT IT</div>
+      <div class="card" id="card">
+        <section class="face front">
+          <div class="module" id="frontModule"></div>
+          <div class="front-center">
+            <div class="term" id="frontTerm"></div>
+            <div class="pron-front" id="frontPronunciation"></div>
+            <div class="hint">Tap to reveal the answer</div>
+          </div>
+        </section>
+        <section class="face back">
+          <div class="module" id="backModule"></div>
+          <h2 id="backTerm"></h2>
+          <div class="back-pron" id="backPronunciation"></div>
+
+          <div class="section">
+            <div class="label">Definition</div>
+            <p class="copy" id="definition"></p>
+          </div>
+
+          <div class="section">
+            <div class="label">DTS Perspective</div>
+            <p class="copy" id="dtsPerspective"></p>
+          </div>
+
+          <div class="section">
+            <div class="label">Memory Trick</div>
+            <p class="copy" id="memoryTrick"></p>
+          </div>
+
+          <button id="speakBtn" class="speaker" aria-label="Hear pronunciation">🔊</button>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div class="actions">
+    <button id="wrongBtn" class="action wrong">← Missed</button>
+    <button id="rightBtn" class="action right">Got it →</button>
+  </div>
+  <div class="directions">Keyboard: ← missed · space flip · → correct</div>
+</div>
+
+<script src="cards.js"></script>
+<script>
+(() => {
+  const cards = window.THEOLOGY_CARDS || [];
+  const KEY = "theology-flashcards-shell-v1";
+  const DAY = 86400000;
+  const $ = id => document.getElementById(id);
+  const els = {
+    deck:$("deckSelect"), card:$("card"), wrap:$("cardWrap"), main:$("main"),
+    fm:$("frontModule"), ft:$("frontTerm"), fp:$("frontPronunciation"),
+    bm:$("backModule"), bt:$("backTerm"), bp:$("backPronunciation"),
+    def:$("definition"), dts:$("dtsPerspective"), memory:$("memoryTrick"),
+    due:$("dueCount"), known:$("knownCount"), missed:$("missedCount"),
+    reviews:$("reviewCount"), progress:$("progressBar"),
+    left:$("leftLabel"), right:$("rightLabel")
+  };
+
+  let state = loadState();
+  let queue = [];
+  let current = null;
+  let drag = null;
+  let sessionSeen = 0;
+  let sessionTotal = 0;
+
+  function freshState(){
+    const progress = {};
+    cards.forEach(c => progress[c.id] = {correct:0,wrong:0,streak:0,interval:0,due:0,last:0});
+    return {progress, deck:"All cards", totalReviews:0};
+  }
+
+  function loadState(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(KEY));
+      const base = freshState();
+      if(!saved) return base;
+      cards.forEach(c => base.progress[c.id] = {...base.progress[c.id], ...(saved.progress?.[c.id] || {})});
+      return {...base, ...saved, progress:base.progress};
+    }catch{
+      return freshState();
+    }
+  }
+
+  function save(){
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
+
+  function setupDecks(){
+    const modules = [...new Set(cards.map(c => c.module))];
+    const names = ["All cards","Due today","Review missed",...modules];
+    els.deck.innerHTML = names.map(n => `<option>${n}</option>`).join("");
+    els.deck.value = names.includes(state.deck) ? state.deck : "All cards";
+  }
+
+  function eligibleCards(){
+    const deck = els.deck.value;
+    const now = Date.now();
+    if(deck === "Due today") return cards.filter(c => (state.progress[c.id].due || 0) <= now);
+    if(deck === "Review missed") return cards.filter(c => state.progress[c.id].wrong > 0 && state.progress[c.id].streak < 3);
+    if(deck === "All cards") return cards.slice();
+    return cards.filter(c => c.module === deck);
+  }
+
+  function buildQueue(){
+    queue = eligibleCards().sort(() => Math.random() - .5);
+    sessionSeen = 0;
+    sessionTotal = queue.length;
+    nextCard();
+  }
+
+  function nextCard(){
+    current = queue.shift() || null;
+    if(!current){
+      showComplete();
+      updateStats();
+      return;
+    }
+    if(!document.body.contains(els.wrap)){
+      els.main.innerHTML = "";
+      els.main.appendChild(els.wrap);
+    }
+    document.querySelector(".actions").style.display = "grid";
+    els.card.className = "card";
+    els.card.style.translate = "0px 0px";
+    els.card.style.rotate = "0deg";
+    els.card.style.opacity = "1";
+    els.left.style.opacity = 0;
+    els.right.style.opacity = 0;
+
+    els.fm.textContent = current.module;
+    els.ft.textContent = current.term;
+    els.fp.textContent = current.pronunciation;
+    els.bm.textContent = current.module;
+    els.bt.textContent = current.term;
+    els.bp.textContent = current.pronunciation;
+    els.def.textContent = current.definition;
+    els.dts.textContent = current.dtsPerspective;
+    els.memory.textContent = current.memoryTrick;
+    updateStats();
+  }
+
+  function grade(correct){
+    if(!current) return;
+    const p = state.progress[current.id];
+    const now = Date.now();
+
+    if(correct){
+      p.correct += 1;
+      p.streak += 1;
+      const intervals = [1,3,7,14,30,60,120];
+      p.interval = intervals[Math.min(p.streak - 1, intervals.length - 1)];
+      p.due = now + p.interval * DAY;
+    }else{
+      p.wrong += 1;
+      p.streak = 0;
+      p.interval = 0;
+      p.due = now + 10 * 60 * 1000;
+      queue.splice(Math.min(3, queue.length), 0, current);
+    }
+
+    p.last = now;
+    state.totalReviews += 1;
+    sessionSeen += 1;
+    save();
+    animateOut(correct);
+  }
+
+  function animateOut(correct){
+    els.card.classList.remove("flipped");
+    els.card.style.translate = `${correct ? 130 : -130}% 0`;
+    els.card.style.rotate = `${correct ? 18 : -18}deg`;
+    els.card.style.opacity = "0";
+    setTimeout(nextCard, 230);
+  }
+
+  function updateStats(){
+    const now = Date.now();
+    const all = Object.values(state.progress);
+    els.due.textContent = all.filter(p => (p.due || 0) <= now).length;
+    els.known.textContent = all.filter(p => p.streak >= 3).length;
+    els.missed.textContent = all.filter(p => p.wrong > 0 && p.streak < 3).length;
+    els.reviews.textContent = state.totalReviews || 0;
+    els.progress.style.width = sessionTotal ? `${Math.min(100, sessionSeen / sessionTotal * 100)}%` : "0%";
+  }
+
+  function showComplete(){
+    document.querySelector(".actions").style.display = "none";
+    els.main.innerHTML = `
+      <div class="empty">
+        <h2>Deck complete</h2>
+        <p>You finished every card in this study session.</p>
+        <button class="small" id="studyAgain">Study again</button>
+        <button class="small" id="resetProgress">Reset progress</button>
+      </div>`;
+    $("studyAgain").onclick = buildQueue;
+    $("resetProgress").onclick = () => {
+      if(confirm("Reset all study history?")){
+        state = freshState();
+        save();
+        setupDecks();
+        buildQueue();
+      }
+    };
+  }
+
+  function speak(){
+    if(!current || !("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(current.term);
+    utterance.rate = .78;
+    speechSynthesis.speak(utterance);
+  }
+
+  els.card.addEventListener("click", e => {
+    if(e.target.closest("#speakBtn") || drag?.moved) return;
+    els.card.classList.toggle("flipped");
+  });
+
+  $("speakBtn").addEventListener("click", e => {
+    e.stopPropagation();
+    speak();
+  });
+
+  $("wrongBtn").onclick = () => grade(false);
+  $("rightBtn").onclick = () => grade(true);
+  $("shuffleBtn").onclick = buildQueue;
+
+  els.deck.onchange = () => {
+    state.deck = els.deck.value;
+    save();
+    buildQueue();
+  };
+
+  els.wrap.addEventListener("pointerdown", e => {
+    if(!current || e.target.closest("button")) return;
+    drag = {x:e.clientX,y:e.clientY,moved:false};
+    els.wrap.setPointerCapture(e.pointerId);
+    els.card.style.transition = "none";
+  });
+
+  els.wrap.addEventListener("pointermove", e => {
+    if(!drag) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    if(Math.abs(dx) > 8) drag.moved = true;
+    if(Math.abs(dx) < Math.abs(dy)) return;
+    els.card.style.translate = `${dx}px 0`;
+    els.card.style.rotate = `${dx / 22}deg`;
+    const strength = Math.min(1, Math.abs(dx) / 120);
+    els.left.style.opacity = dx < 0 ? strength : 0;
+    els.right.style.opacity = dx > 0 ? strength : 0;
+  });
+
+  function endDrag(e){
+    if(!drag) return;
+    const dx = e.clientX - drag.x;
+    els.card.style.transition = "";
+    els.left.style.opacity = 0;
+    els.right.style.opacity = 0;
+
+    if(Math.abs(dx) > 90){
+      grade(dx > 0);
+    }else{
+      els.card.style.translate = "0px 0px";
+      els.card.style.rotate = "0deg";
+    }
+    setTimeout(() => drag = null, 0);
+  }
+
+  els.wrap.addEventListener("pointerup", endDrag);
+  els.wrap.addEventListener("pointercancel", () => {
+    drag = null;
+    els.card.style.transition = "";
+    els.card.style.translate = "0px 0px";
+    els.card.style.rotate = "0deg";
+  });
+
+  document.addEventListener("keydown", e => {
+    if(e.key === "ArrowLeft") grade(false);
+    if(e.key === "ArrowRight") grade(true);
+    if(e.key === " "){
+      e.preventDefault();
+      els.card.classList.toggle("flipped");
+    }
+  });
+
+  setupDecks();
+  buildQueue();
+
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js"));
+  }
+})();
+</script>
+</body>
+</html>
