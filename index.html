@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>Theology Flashcards</title>
+
+  <style>
+    :root{
+      --bg:#f4f6f8; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
+      --line:#e2e8f0; --accent:#1d4ed8; --good:#15803d; --bad:#b91c1c;
+      --shadow:0 14px 38px rgba(15,23,42,.12);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;position:fixed;inset:0}
+    body{
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg); color:var(--ink); overscroll-behavior:none;
+    }
+    button,select{font:inherit}
+    .app{
+      height:100dvh;
+      height:100svh;
+      min-height:0;
+      max-width:760px;
+      margin:auto;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      padding:
+        max(env(safe-area-inset-top),10px)
+        12px
+        max(env(safe-area-inset-bottom),8px);
+    }
+    header{padding:5px 2px 7px;flex:0 0 auto}
+    h1{font-size:clamp(1.35rem,5.8vw,1.75rem);line-height:1.05;margin:0 0 3px}
+    .sub{color:var(--muted);font-size:clamp(.76rem,3.5vw,.93rem);line-height:1.2}
+    .toolbar{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      gap:7px;
+      margin:4px 0 7px;
+      flex:0 0 auto;
+    }
+    select,.small{
+      border:1px solid var(--line); background:var(--panel); color:var(--ink);
+      border-radius:12px; padding:8px 10px; min-height:40px;
+    }
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:6px;
+      margin-bottom:6px;
+      flex:0 0 auto;
+    }
+    .stat{
+      background:rgba(255,255,255,.8);
+      border:1px solid var(--line);
+      border-radius:12px;
+      text-align:center;
+      padding:6px 3px;
+      min-width:0;
+    }
+    .stat strong{display:block;font-size:.92rem;line-height:1.05}
+    .stat span{color:var(--muted);font-size:.64rem;line-height:1}
+    .progress{
+      height:5px;
+      background:#dbe2ea;
+      border-radius:999px;
+      overflow:hidden;
+      margin:0 2px 7px;
+      flex:0 0 auto;
+    }
+    .progress>div{height:100%;width:0;background:var(--accent);transition:width .2s ease}
+    main{
+      flex:1 1 auto;
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      min-height:0;
+      overflow:hidden;
+    }
+    .card-wrap{
+      width:100%;
+      height:100%;
+      min-height:0;
+      perspective:1200px;
+      position:relative;
+      touch-action:none;
+    }
+    .card{
+      width:100%;
+      height:100%;
+      position:relative;
+      transform-style:preserve-3d;
+      transition:transform .36s ease, translate .22s ease, rotate .22s ease, opacity .22s ease;
+      cursor:pointer;
+    }
+    .card.flipped{transform:rotateY(180deg)}
+    .face{
+      position:absolute;
+      inset:0;
+      backface-visibility:hidden;
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:22px;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .front{overflow:hidden}
+    .back{
+      transform:rotateY(180deg);
+      overflow-y:auto;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+      padding-bottom:30px;
+    }
+    .module{
+      color:var(--accent);
+      font-size:.7rem;
+      text-transform:uppercase;
+      letter-spacing:.09em;
+      font-weight:800;
+    }
+    .front-center{
+      margin:auto;
+      text-align:center;
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      min-height:0;
+    }
+    .term{
+      font-size:clamp(2rem,10vw,3.6rem);
+      line-height:1.02;
+      margin:10px 0 8px;
+      overflow-wrap:anywhere;
+    }
+    .front-speaker{
+      border:0;
+      background:#eaf0ff;
+      color:var(--accent);
+      border-radius:999px;
+      width:48px;
+      height:48px;
+      font-size:1.2rem;
+      margin-top:10px;
+      flex:0 0 auto;
+    }
+    .hint{margin-top:13px;color:var(--muted);font-size:.8rem}
+    .back h2{font-size:1.72rem;line-height:1.08;margin:10px 0 3px}
+    .section{margin-top:14px}
+    .label{
+      color:var(--muted);
+      font-size:.67rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      font-weight:800;
+      margin-bottom:5px;
+    }
+    .copy{font-size:.98rem;line-height:1.48;margin:0}
+    .tell-more{
+      width:100%;
+      border:1px solid var(--line);
+      background:#eef2ff;
+      color:var(--accent);
+      border-radius:12px;
+      padding:10px 12px;
+      margin-top:16px;
+      font-weight:800;
+      text-align:left;
+    }
+    .more-panel{
+      display:none;
+      margin-top:10px;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(148,163,184,.10);
+    }
+    .more-panel.open{display:block}
+    .scripture-list,.compare-list{margin:0;padding-left:20px}
+    .scripture-list li,.compare-list li{margin:4px 0;line-height:1.4}
+    .confusion{
+      border-left:4px solid #d97706;
+      padding:10px 12px;
+      background:rgba(245,158,11,.10);
+      border-radius:8px;
+    }
+    .swipe-label{
+      position:absolute;
+      top:22px;
+      padding:8px 11px;
+      border:3px solid;
+      border-radius:10px;
+      font-weight:900;
+      letter-spacing:.08em;
+      opacity:0;
+      z-index:10;
+      pointer-events:none;
+    }
+    .swipe-label.left{right:22px;color:var(--bad);transform:rotate(10deg)}
+    .swipe-label.right{left:22px;color:var(--good);transform:rotate(-10deg)}
+    .actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      padding:8px 2px 4px;
+      flex:0 0 auto;
+    }
+    .action{
+      border:0;
+      border-radius:15px;
+      padding:12px 8px;
+      min-height:48px;
+      color:white;
+      font-weight:850;
+    }
+    .wrong{background:var(--bad)}
+    .right{background:var(--good)}
+    .directions{display:none}
+    .empty{
+      width:100%;
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:22px;
+      padding:28px;
+      text-align:center;
+      box-shadow:var(--shadow)
+    }
+    .empty h2{margin-top:0}
+
+    /* Extra compression for shorter iPhones or landscape */
+    @media (max-height:760px){
+      .app{padding-top:max(env(safe-area-inset-top),6px)}
+      header{padding:2px 2px 4px}
+      h1{font-size:1.28rem}
+      .sub{font-size:.72rem}
+      .toolbar{margin:2px 0 5px}
+      select,.small{min-height:36px;padding:6px 9px}
+      .stats{margin-bottom:4px}
+      .stat{padding:4px 2px}
+      .progress{margin-bottom:5px}
+      .face{padding:18px}
+      .actions{padding-top:6px}
+      .action{min-height:44px;padding:10px 6px}
+    }
+
+    @media (prefers-color-scheme:dark){
+      :root{
+        --bg:#090e18;--panel:#111827;--ink:#f8fafc;--muted:#94a3b8;
+        --line:#263244;--shadow:0 18px 50px rgba(0,0,0,.35)
+      }
+      .stat{background:rgba(17,24,39,.82)}
+      select,.small{background:#111827;color:#f8fafc}
+      .front-speaker{background:#172554}
+      .tell-more{background:#172554}
+    }
+  </style>
+
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Theology Flashcards</h1>
+    <div class="sub">Swipe left when missed. Swipe right when correct.</div>
+  </header>
+
+  <div class="toolbar">
+    <select id="deckSelect"></select>
+    <button id="shuffleBtn" class="small">Shuffle</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><strong id="dueCount">0</strong><span>Due</span></div>
+    <div class="stat"><strong id="knownCount">0</strong><span>Known</span></div>
+    <div class="stat"><strong id="missedCount">0</strong><span>Missed</span></div>
+    <div class="stat"><strong id="reviewCount">0</strong><span>Reviews</span></div>
+  </div>
+  <div class="progress"><div id="progressBar"></div></div>
+
+  <main id="main">
+    <div class="card-wrap" id="cardWrap">
+      <div class="swipe-label left" id="leftLabel">MISSED</div>
+      <div class="swipe-label right" id="rightLabel">GOT IT</div>
+      <div class="card" id="card">
+        <section class="face front">
+          <div class="module" id="frontModule"></div>
+          <div class="front-center">
+            <div class="term" id="frontTerm"></div>
+            <button id="frontSpeakBtn" class="front-speaker" aria-label="Hear pronunciation">🔊</button>
+            <div class="hint">Tap the card to reveal the answer</div>
+          </div>
+        </section>
+        <section class="face back">
+          <div class="module" id="backModule"></div>
+          <h2 id="backTerm"></h2>
+
+          <div class="section" id="definitionSection">
+            <div class="label">Definition</div>
+            <p class="copy" id="definition"></p>
+          </div>
+
+          <div class="section" id="whySection">
+            <div class="label">Why It Matters</div>
+            <p class="copy" id="whyItMatters"></p>
+          </div>
+
+          <div class="section" id="dtsSection">
+            <div class="label">DTS Perspective</div>
+            <p class="copy" id="dtsPerspective"></p>
+          </div>
+
+          <div class="section" id="scriptureSection">
+            <div class="label">Key Scriptures</div>
+            <ul class="scripture-list" id="keyScriptures"></ul>
+          </div>
+
+          <div class="section" id="compareSection">
+            <div class="label">Compare / Contrast</div>
+            <ul class="compare-list" id="compareContrast"></ul>
+          </div>
+
+          <div class="section" id="confusionSection">
+            <div class="label">Common Confusion</div>
+            <div class="copy confusion" id="commonConfusion"></div>
+          </div>
+
+          <button id="tellMoreBtn" class="tell-more" aria-expanded="false">📖 Tell me more</button>
+          <div id="morePanel" class="more-panel">
+            <p class="copy" id="tellMeMore"></p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div class="actions">
+    <button id="wrongBtn" class="action wrong">← Missed</button>
+    <button id="rightBtn" class="action right">Got it →</button>
+  </div>
+  <div class="directions">Keyboard: ← missed · space flip · → correct</div>
+</div>
+
+<script src="cards.js?deck=live"></script>
+<script>
+(() => {
+  const cards = window.THEOLOGY_CARDS || [];
+  const KEY = "theology-flashcards-shell-v1";
+  const DAY = 86400000;
+  const $ = id => document.getElementById(id);
+  const els = {
+    deck:$("deckSelect"), card:$("card"), wrap:$("cardWrap"), main:$("main"),
+    fm:$("frontModule"), ft:$("frontTerm"),
+    bm:$("backModule"), bt:$("backTerm"),
+    def:$("definition"), why:$("whyItMatters"), dts:$("dtsPerspective"),
+    scriptures:$("keyScriptures"), compare:$("compareContrast"),
+    confusion:$("commonConfusion"), more:$("tellMeMore"), morePanel:$("morePanel"),
+    due:$("dueCount"), known:$("knownCount"), missed:$("missedCount"),
+    reviews:$("reviewCount"), progress:$("progressBar"),
+    left:$("leftLabel"), right:$("rightLabel")
+  };
+
+  let state = loadState();
+  let queue = [];
+  let current = null;
+  let drag = null;
+  let sessionSeen = 0;
+  let sessionTotal = 0;
+
+  function freshState(){
+    const progress = {};
+    cards.forEach(c => progress[c.id] = {correct:0,wrong:0,streak:0,interval:0,due:0,last:0});
+    return {progress, deck:"All cards", totalReviews:0};
+  }
+
+  function loadState(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(KEY));
+      const base = freshState();
+      if(!saved) return base;
+      cards.forEach(c => base.progress[c.id] = {...base.progress[c.id], ...(saved.progress?.[c.id] || {})});
+      return {...base, ...saved, progress:base.progress};
+    }catch{
+      return freshState();
+    }
+  }
+
+  function save(){
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
+
+  function setupDecks(){
+    const modules = [...new Set(cards.map(c => c.module))];
+    const names = ["All cards","Due today","Review missed",...modules];
+    els.deck.innerHTML = names.map(n => `<option>${n}</option>`).join("");
+    els.deck.value = names.includes(state.deck) ? state.deck : "All cards";
+  }
+
+  function eligibleCards(){
+    const deck = els.deck.value;
+    const now = Date.now();
+    if(deck === "Due today") return cards.filter(c => (state.progress[c.id].due || 0) <= now);
+    if(deck === "Review missed") return cards.filter(c => state.progress[c.id].wrong > 0 && state.progress[c.id].streak < 3);
+    if(deck === "All cards") return cards.slice();
+    return cards.filter(c => c.module === deck);
+  }
+
+  function buildQueue(){
+    queue = eligibleCards().sort(() => Math.random() - .5);
+    sessionSeen = 0;
+    sessionTotal = queue.length;
+    nextCard();
+  }
+
+  function asList(value){
+    if(Array.isArray(value)) return value.filter(Boolean);
+    if(typeof value === "string") return value.split(/\n|;|\|/).map(v => v.trim()).filter(Boolean);
+    return [];
+  }
+
+  function setList(element, values){
+    element.innerHTML = asList(values).map(item => `<li>${escapeHtml(item)}</li>`).join("");
+  }
+
+  function escapeHtml(value){
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function showSection(id, hasContent){
+    const section = $(id);
+    if(section) section.style.display = hasContent ? "block" : "none";
+  }
+
+  function buildTellMeMore(card){
+    const parts = [];
+    if(card.definition){
+      const definition = card.definition.charAt(0).toLowerCase() + card.definition.slice(1);
+      parts.push(`At its core, ${card.term} refers to ${definition}`);
+    }
+    if(card.whyItMatters || card.why){
+      parts.push(card.whyItMatters || card.why);
+    }
+    if(card.dtsPerspective){
+      parts.push(`From the DTS-oriented perspective used in this deck: ${card.dtsPerspective}`);
+    }
+    if(card.commonConfusion){
+      parts.push(`A useful caution: ${card.commonConfusion}`);
+    }
+    return parts.join("\n\n") || `More detail for ${card.term} can be added in cards.js without changing the app itself.`;
+  }
+
+  function nextCard(){
+    current = queue.shift() || null;
+    if(!current){
+      showComplete();
+      updateStats();
+      return;
+    }
+    if(!document.body.contains(els.wrap)){
+      els.main.innerHTML = "";
+      els.main.appendChild(els.wrap);
+    }
+    document.querySelector(".actions").style.display = "grid";
+    els.card.className = "card";
+    els.card.style.translate = "0px 0px";
+    els.card.style.rotate = "0deg";
+    els.card.style.opacity = "1";
+    els.left.style.opacity = 0;
+    els.right.style.opacity = 0;
+
+    els.fm.textContent = current.module || "";
+    els.ft.textContent = current.term || "";
+    els.bm.textContent = current.module || "";
+    els.bt.textContent = current.term || "";
+
+    const definition = current.definition || "";
+    const why = current.whyItMatters || current.why || "";
+    const dts = current.dtsPerspective || "";
+    const scriptures = current.keyScriptures || current.scriptures || [];
+    const compare = current.compareContrast || current.compare || [];
+    const confusion = current.commonConfusion || "";
+    const more = current.tellMeMore || current.more || buildTellMeMore(current);
+
+    els.def.textContent = definition;
+    els.why.textContent = why;
+    els.dts.textContent = dts;
+    setList(els.scriptures, scriptures);
+    setList(els.compare, compare);
+    els.confusion.textContent = confusion;
+    els.more.textContent = more;
+    els.morePanel.classList.remove("open");
+    $("tellMoreBtn").setAttribute("aria-expanded", "false");
+    $("tellMoreBtn").textContent = "📖 Tell me more";
+
+    showSection("definitionSection", Boolean(definition));
+    showSection("whySection", Boolean(why));
+    showSection("dtsSection", Boolean(dts));
+    showSection("scriptureSection", asList(scriptures).length > 0);
+    showSection("compareSection", asList(compare).length > 0);
+    showSection("confusionSection", Boolean(confusion));
+    $("tellMoreBtn").style.display = "block";
+    updateStats();
+  }
+
+  function grade(correct){
+    if(!current) return;
+    const p = state.progress[current.id];
+    const now = Date.now();
+
+    if(correct){
+      p.correct += 1;
+      p.streak += 1;
+      const intervals = [1,3,7,14,30,60,120];
+      p.interval = intervals[Math.min(p.streak - 1, intervals.length - 1)];
+      p.due = now + p.interval * DAY;
+    }else{
+      p.wrong += 1;
+      p.streak = 0;
+      p.interval = 0;
+      p.due = now + 10 * 60 * 1000;
+      queue.splice(Math.min(3, queue.length), 0, current);
+    }
+
+    p.last = now;
+    state.totalReviews += 1;
+    sessionSeen += 1;
+    save();
+    animateOut(correct);
+  }
+
+  function animateOut(correct){
+    els.card.classList.remove("flipped");
+    els.card.style.translate = `${correct ? 130 : -130}% 0`;
+    els.card.style.rotate = `${correct ? 18 : -18}deg`;
+    els.card.style.opacity = "0";
+    setTimeout(nextCard, 230);
+  }
+
+  function updateStats(){
+    const now = Date.now();
+    const all = Object.values(state.progress);
+    els.due.textContent = all.filter(p => (p.due || 0) <= now).length;
+    els.known.textContent = all.filter(p => p.streak >= 3).length;
+    els.missed.textContent = all.filter(p => p.wrong > 0 && p.streak < 3).length;
+    els.reviews.textContent = state.totalReviews || 0;
+    els.progress.style.width = sessionTotal ? `${Math.min(100, sessionSeen / sessionTotal * 100)}%` : "0%";
+  }
+
+  function showComplete(){
+    document.querySelector(".actions").style.display = "none";
+    els.main.innerHTML = `
+      <div class="empty">
+        <h2>Deck complete</h2>
+        <p>You finished every card in this study session.</p>
+        <button class="small" id="studyAgain">Study again</button>
+        <button class="small" id="resetProgress">Reset progress</button>
+      </div>`;
+    $("studyAgain").onclick = buildQueue;
+    $("resetProgress").onclick = () => {
+      if(confirm("Reset all study history?")){
+        state = freshState();
+        save();
+        setupDecks();
+        buildQueue();
+      }
+    };
+  }
+
+  function speak(){
+    if(!current || !("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(current.term);
+    utterance.rate = .78;
+    speechSynthesis.speak(utterance);
+  }
+
+  els.card.addEventListener("click", e => {
+    if(e.target.closest("button") || drag?.moved) return;
+    els.card.classList.toggle("flipped");
+  });
+
+  $("frontSpeakBtn").addEventListener("click", e => {
+    e.stopPropagation();
+    speak();
+  });
+
+  $("tellMoreBtn").addEventListener("click", e => {
+    e.stopPropagation();
+    const isOpen = els.morePanel.classList.toggle("open");
+    e.currentTarget.setAttribute("aria-expanded", String(isOpen));
+    e.currentTarget.textContent = isOpen ? "▲ Show less" : "📖 Tell me more";
+  });
+
+  $("wrongBtn").onclick = () => grade(false);
+  $("rightBtn").onclick = () => grade(true);
+  $("shuffleBtn").onclick = buildQueue;
+
+  els.deck.onchange = () => {
+    state.deck = els.deck.value;
+    save();
+    buildQueue();
+  };
+
+  function beginDrag(x, y, target){
+    if(!current || target.closest("button")) return;
+    drag = {x, y, moved:false, horizontal:false};
+    els.card.style.transition = "none";
+  }
+
+  function moveDrag(x, y, event){
+    if(!drag) return;
+    const dx = x - drag.x;
+    const dy = y - drag.y;
+
+    if(!drag.horizontal && (Math.abs(dx) > 7 || Math.abs(dy) > 7)){
+      drag.horizontal = Math.abs(dx) > Math.abs(dy);
+    }
+
+    // Let the back of the card scroll vertically, but reserve horizontal motion for grading.
+    if(!drag.horizontal){
+      if(els.card.classList.contains("flipped")) return;
+      if(event?.cancelable) event.preventDefault();
+      return;
+    }
+
+    if(event?.cancelable) event.preventDefault();
+    drag.moved = true;
+    els.card.style.translate = `${dx}px 0`;
+    els.card.style.rotate = `${dx / 22}deg`;
+
+    const strength = Math.min(1, Math.abs(dx) / 120);
+    els.left.style.opacity = dx < 0 ? strength : 0;
+    els.right.style.opacity = dx > 0 ? strength : 0;
+  }
+
+  function finishDrag(x){
+    if(!drag) return;
+    const dx = x - drag.x;
+
+    els.card.style.transition = "";
+    els.left.style.opacity = 0;
+    els.right.style.opacity = 0;
+
+    if(drag.horizontal && Math.abs(dx) > 80){
+      grade(dx > 0);
+    }else{
+      els.card.style.translate = "0px 0px";
+      els.card.style.rotate = "0deg";
+    }
+
+    setTimeout(() => drag = null, 0);
+  }
+
+  // Native touch events are more reliable in an iPhone Home Screen web app.
+  els.wrap.addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    beginDrag(t.clientX, t.clientY, e.target);
+  }, {passive:true});
+
+  els.wrap.addEventListener("touchmove", e => {
+    const t = e.touches[0];
+    moveDrag(t.clientX, t.clientY, e);
+  }, {passive:false});
+
+  els.wrap.addEventListener("touchend", e => {
+    const t = e.changedTouches[0];
+    finishDrag(t.clientX);
+  }, {passive:true});
+
+  els.wrap.addEventListener("touchcancel", () => {
+    drag = null;
+    els.card.style.transition = "";
+    els.card.style.translate = "0px 0px";
+    els.card.style.rotate = "0deg";
+    els.left.style.opacity = 0;
+    els.right.style.opacity = 0;
+  });
+
+  // Desktop mouse fallback.
+  els.wrap.addEventListener("mousedown", e => {
+    beginDrag(e.clientX, e.clientY, e.target);
+  });
+
+  window.addEventListener("mousemove", e => {
+    moveDrag(e.clientX, e.clientY, e);
+  });
+
+  window.addEventListener("mouseup", e => {
+    finishDrag(e.clientX);
+  });
+
+  document.addEventListener("keydown", e => {
+    if(e.key === "ArrowLeft") grade(false);
+    if(e.key === "ArrowRight") grade(true);
+    if(e.key === " "){
+      e.preventDefault();
+      els.card.classList.toggle("flipped");
+    }
+  });
+
+  setupDecks();
+  buildQueue();
+
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js?v=5"));
+  }
+})();
+</script>
+</body>
+</html>
